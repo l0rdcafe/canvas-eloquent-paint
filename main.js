@@ -97,15 +97,25 @@ function startLoad(dispatch) {
   input.remove();
 }
 
-function drawPicture(picture, canvas, scale) {
-  canvas.width = picture.width * scale;
-  canvas.height = picture.height * scale;
+function drawPicture(picture, canvas, scale, previous) {
+  if (
+    previous == null ||
+    previous.width !== picture.width ||
+    previous.height !== picture.height
+  ) {
+    canvas.width = picture.width * scale;
+    canvas.height = picture.height * scale;
+    previous = null;
+  }
 
   const ctx = canvas.getContext("2d");
   for (let y = 0; y < picture.height; y++) {
     for (let x = 0; x < picture.width; x++) {
-      ctx.fillStyle = picture.pixel(x, y);
-      ctx.fillRect(x * scale, y * scale, scale, scale);
+      const color = picture.pixel(x, y);
+      if (previous == null || previous.pixel(x, y) !== color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
     }
   }
 }
@@ -279,8 +289,8 @@ class PictureCanvas {
       return;
     }
 
+    drawPicture(picture, this.dom, scale, this.picture);
     this.picture = picture;
-    drawPicture(this.picture, this.dom, scale);
   }
 }
 
