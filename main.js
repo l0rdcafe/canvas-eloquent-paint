@@ -335,11 +335,32 @@ class PixelEditor {
     this.controls = controls.map((Control) => new Control(state, config));
     this.dom = elt(
       "div",
-      {},
+      {
+        tabIndex: 0,
+        onkeydown: (e) => this.keyDown(e, config),
+      },
       this.canvas.dom,
       elt("br"),
       ...this.controls.reduce((a, c) => a.concat(" ", c.dom), [])
     );
+  }
+
+  keyDown(e, config) {
+    if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      config.dispatch({ undo: true });
+      return;
+    }
+
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      for (const tool of Object.keys(config.tools)) {
+        if (tool[0] === e.key) {
+          e.preventDefault();
+          config.dispatch({ tool });
+          return;
+        }
+      }
+    }
   }
 
   syncState(state) {
