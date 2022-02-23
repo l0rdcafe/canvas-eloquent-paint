@@ -128,14 +128,40 @@ function pointerPosition(pos, domNode) {
   };
 }
 
-function draw(pos, state, dispatch) {
-  function drawPixel({ x, y }, pixelState) {
-    const drawn = { x, y, color: pixelState.color };
-    dispatch({ picture: state.picture.draw([drawn]) });
+function drawLine(from, to, color) {
+  const points = [];
+  if (Math.abs(from.x - to.x) > Math.abs(from.y - to.y)) {
+    if (from.x > to.x) {
+      [from, to] = [to, from];
+    }
+    const slope = (to.y - from.y) / (to.x - from.x);
+    for (let { x, y } = from; x <= to.x; x++) {
+      points.push({ x, y: Math.round(y), color });
+      y += slope;
+    }
+    return points;
   }
 
-  drawPixel(pos, state);
-  return drawPixel;
+  if (from.y > to.y) {
+    [from, to] = [to, from];
+  }
+  const slope = (to.x - from.x) / (to.y - from.y);
+  for (let { x, y } = from; y <= to.y; y++) {
+    points.push({ x: Math.round(x), y, color });
+    x += slope;
+  }
+  return points;
+}
+
+function draw(pos, state, dispatch) {
+  function connect(newPos, currentState) {
+    const line = drawLine(pos, newPos, currentState.color);
+    pos = newPos;
+    dispatch({ picture: currentState.picture.draw(line) });
+  }
+
+  connect(pos, state);
+  return connect;
 }
 
 function rectangle(start, state, dispatch) {
@@ -194,6 +220,13 @@ function circle(pos, state, dispatch) {
 
   drawCircle(pos);
   return drawCircle;
+}
+
+function line(pos, state, dispatch) {
+  return (end) => {
+    const drawnLine = drawLine(pos, end, state.color);
+    dispatch({ picture: state.picture.draw(drawnLine) });
+  };
 }
 
 const around = [
@@ -476,7 +509,7 @@ const startState = {
   doneAt: 0,
 };
 
-const baseTools = { draw, fill, rectangle, pick, circle };
+const baseTools = { draw, fill, rectangle, pick, line, circle };
 const baseControls = [
   ToolSelect,
   ColorSelect,
